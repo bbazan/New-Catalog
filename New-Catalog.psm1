@@ -79,12 +79,12 @@ Function New-Catalog(
     [Parameter(Mandatory=$true)][string]$vCDHost,
     [Parameter(Mandatory=$true)][string]$OrgName,
     [Parameter(Mandatory=$true)][string]$CatalogName,
-    [string]$CatalogDescription,
+    [string]$CatalogDescription = "This is a catalog created from powershell",
     [string]$StorageProfile,
-    [string]$IsPublishedExternally,
-    [string]$PublishCatalogPassword,
-    [string]$IsCacheEnabled,
-    [string]$PreserveIdentityInfoFlag
+    [string]$IsPublishedExternally = "false",
+    [string]$PublishCatalogPassword = $null,
+    [string]$IsCacheEnabled = "false",
+    [string]$PreserveIdentityInfoFlag = "false"
 )
 {
 <#
@@ -108,11 +108,20 @@ An optional storage profile on which the new catalog should be created,
 if not specified any available storage profile will be used.
 .PARAMETER IsPublishedExternally
 An option to publish the new catalog publically.
+.PARAMETER PublishCatalogPassword
+An option to set a published catalog password
+.PARAMETER IsCacheEnabled
+An optional parameter for caching of content being enabled for this catalog
+true for yes, false for no
+.PARAMETER PreserveIdentityInfoFlag
+An optional parameter to preserve identity of content within this catalog
+true for yes, false for no
 .OUTPUTS
 None
 .EXAMPLE
 New-Catalog vCDHost www.mycloud.com -Org MyOrg -CatalogName 'Test'
-    -CatalogDescription 'My Test Catalog' -IsPublishedExternally 'true'
+    -CatalogDescription 'My Test Catalog' -IsPublishedExternally true -IsCacheEnabled false 
+    -PublishCatalogPassword P@ssW0rd -PreserveIdentityInfoFlag true
 .NOTES
 You must either have an existing PowerCLI connection to vCloud Director
 (Connect-CIServer) in your current PowerShell session to use New-Catalog.
