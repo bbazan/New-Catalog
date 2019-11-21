@@ -10,25 +10,42 @@
 #
 # Copyright 2018 Jon Waite, All Rights Reserved
 # Released under MIT License - see https://opensource.org/licenses/MIT
-
 Function CatalogToXML(
     [Parameter(Mandatory=$true)][string]$catName,
     [string]$catDesc,
     [string]$orgName,
-    [string]$sprof
+    [string]$sprof,
+    [string]$pubexternal,
+    [string]$pubpass,
+    [string]$cacheenabled,
+    [string]$preseveid
 )
 {
+  
     # Create properly formed xml of type application/vnd.vmware.admin.catalog+xml:
     [xml]$newcatalog = New-Object System.Xml.XmlDocument
     $dec = $newcatalog.CreateXmlDeclaration("1.0","UTF-8",$null)
     $newcatalog.AppendChild($dec) | Out-Null
     $root = $newcatalog.CreateNode("element","AdminCatalog",$null)
     $desc = $newcatalog.CreateNode("element","Description",$null)
+    $catpubext = $newcatalog.CreateNode("element","PublishExternalCatalogParams",$null)
+    $ispubextelem = $newcatalog.CreateNode("element","IsPublishedExternally",$null)
+    $iscacheelem = $newcatalog.CreateNode("element","IsCacheEnabled",$null)
+    $presidelem = $newcatalog.CreateNode("element","PreserveIdentityInfoFlag",$null)
+    $pubpasselem = $newcatalog.CreateNode("element","Password",$null)
     $root.setAttribute("xmlns","http://www.vmware.com/vcloud/v1.5")
     $root.SetAttribute("name",$catName)
+    $ispubextelem.InnerText = $pubexternal
+    $iscacheelem.InnerText = $cacheenabled
+    $presidelem.InnerText = $preseveid
+    $pubpasselem.InnerText = $pubpass
     $desc.innerText = $catDesc
     $root.AppendChild($desc) | Out-Null
-    
+    $catpubext.AppendChild($ispubextelem) | Out-Null
+    $catpubext.AppendChild($pubpasselem) | Out-Null
+    $catpubext.AppendChild($iscacheelem) | Out-Null
+    $catpubext.AppendChild($presidelem) | Out-Null
+    $root.AppendChild($catpubext) | Out-Null
     # Attempt to match Storage Profile specified (if any) and use that for catalog creation XML:
     if ($sprof) {
         $sprofhref = ""
@@ -63,7 +80,11 @@ Function New-Catalog(
     [Parameter(Mandatory=$true)][string]$OrgName,
     [Parameter(Mandatory=$true)][string]$CatalogName,
     [string]$CatalogDescription,
-    [string]$StorageProfile
+    [string]$StorageProfile,
+    [string]$IsPublishedExternally,
+    [string]$PublishCatalogPassword,
+    [string]$IsCacheEnabled,
+    [string]$PreserveIdentityInfoFlag
 )
 {
 <#
@@ -85,11 +106,13 @@ An optional description of the new catalog.
 .PARAMETER StorageProfile
 An optional storage profile on which the new catalog should be created,
 if not specified any available storage profile will be used.
+.PARAMETER IsPublishedExternally
+An option to publish the new catalog publically.
 .OUTPUTS
 None
 .EXAMPLE
 New-Catalog vCDHost www.mycloud.com -Org MyOrg -CatalogName 'Test'
-    -CatalogDescription 'My Test Catalog'
+    -CatalogDescription 'My Test Catalog' -IsPublishedExternally 'true'
 .NOTES
 You must either have an existing PowerCLI connection to vCloud Director
 (Connect-CIServer) in your current PowerShell session to use New-Catalog.
@@ -109,7 +132,7 @@ be able to create catalogs in your currently logged in Organization.
     }
 
     # Construct 'body' XML representing the new catalog to be created:
-    $XMLcat = CatalogToXML -catName $CatalogName -catDesc $CatalogDescription -OrgName $OrgName -sprof $StorageProfile
+    $XMLcat = CatalogToXML -catName $CatalogName -catDesc $CatalogDescription -OrgName $OrgName -sprof $StorageProfile -pubexternal $IsPublishedExternally -pubpass $CatalogPassword -cacheenabled $IsCacheEnabled -preseveid $PreserveIdentityInfoFlag
     
     # Call VCD API to create catalog:
     Invoke-vCloud -URI ($org.href + '/catalogs') -vCloudToken $mySessionID -ContentType 'application/vnd.vmware.admin.catalog+xml' -Method POST -Body $XMLcat | Out-Null
