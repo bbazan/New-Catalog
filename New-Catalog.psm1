@@ -10,6 +10,9 @@
 #
 # Copyright 2018 Jon Waite, All Rights Reserved
 # Released under MIT License - see https://opensource.org/licenses/MIT
+# Brandon Bazan 2020 updates:
+# Modified to allow publishing as a feature for newly created catalogs
+# Returns published catalog URL for future use
 Function CatalogToXML(
     [Parameter(Mandatory=$true)][string]$catName,
     [string]$catDesc,
@@ -117,11 +120,12 @@ true for yes, false for no
 An optional parameter to preserve identity of content within this catalog
 true for yes, false for no
 .OUTPUTS
-None
+The published URL of the newly created catalog like below
+https://your-vcd-instance.com/vcsp/lib/UUID/
 .EXAMPLE
-New-Catalog vCDHost www.mycloud.com -Org MyOrg -CatalogName 'Test'
-    -CatalogDescription 'My Test Catalog' -IsPublishedExternally true -IsCacheEnabled false 
-    -PublishCatalogPassword P@ssW0rd -PreserveIdentityInfoFlag true
+    New-Catalog vCDHost www.mycloud.com -Org MyOrg -CatalogName 'Test' -CatalogDescription 'My Test Catalog' -IsPublishedExternally true -IsCacheEnabled false -PublishCatalogPassword P@ssW0rd -PreserveIdentityInfoFlag true
+.EXAMPLE
+    $published_url = New-Catalog vCDHost www.mycloud.com -Org MyOrg -CatalogName 'Test1' -CatalogDescription 'My Test Catalog' -IsPublishedExternally true -IsCacheEnabled false -PublishCatalogPassword P@ssW0rd -PreserveIdentityInfoFlag true
 .NOTES
 You must either have an existing PowerCLI connection to vCloud Director
 (Connect-CIServer) in your current PowerShell session to use New-Catalog.
@@ -142,10 +146,14 @@ be able to create catalogs in your currently logged in Organization.
 
     # Construct 'body' XML representing the new catalog to be created:
     $XMLcat = CatalogToXML -catName $CatalogName -catDesc $CatalogDescription -OrgName $OrgName -sprof $StorageProfile -pubexternal $IsPublishedExternally -pubpass $CatalogPassword -cacheenabled $IsCacheEnabled -preseveid $PreserveIdentityInfoFlag
-    
+    Write-Host 'Creating '  $CatalogName ' in ' $OrgName
     # Call VCD API to create catalog:
     Invoke-vCloud -URI ($org.href + '/catalogs') -vCloudToken $mySessionID -ContentType 'application/vnd.vmware.admin.catalog+xml' -Method POST -Body $XMLcat | Out-Null
+    
+    $catprops = get-catalog -name $CatalogName -org $OrgName
+    #Returns published URL for catalog to be used to subscribe
+    $PublishedURL = ( 'https://' + $vCDHost + $catprops.ExtensionData.PublishExternalCatalogParams.CatalogPublishedUrl)
+    return $PublishedURL
 }
-
 # Export function from module:
 Export-ModuleMember -Function New-Catalog
